@@ -990,7 +990,7 @@ void EngineMatch::onGameStarted(ChessGame* game, int number)
 		pMap.insert("index", number);
 		pMap.insert("white", game->player(Chess::Side::White)->name());
 		pMap.insert("black", game->player(Chess::Side::Black)->name());
-		QDateTime qdt = QDateTime::currentDateTime();
+		QDateTime qdt = QDateTime::currentDateTimeUtc();
 		pMap.insert("startTime", qdt.toString("HH:mm:ss' on 'yyyy.MM.dd"));
 		pMap.insert("result", "*");
 		pMap.insert("terminationDetails", "in progress");
@@ -1197,7 +1197,7 @@ void EngineMatch::onGameSkipped(int number, int iWhite, int iBlack)
 		pMap.insert("index", number);
 		pMap.insert("white", m_tournament->playerAt(iWhite).name());
 		pMap.insert("black", m_tournament->playerAt(iBlack).name());
-		QDateTime qdt = QDateTime::currentDateTime();
+		QDateTime qdt = QDateTime::currentDateTimeUtc();
 		// pMap.insert("result", "*");
 		pMap.insert("terminationDetails", "Skipped");
 		pList.append(pMap);

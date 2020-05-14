@@ -392,7 +392,7 @@ void ChessGame::stop(bool emitMoveChanged)
 		return;
 	}
 	
-	QDateTime gameEndTime = QDateTime::currentDateTime();
+	QDateTime gameEndTime = QDateTime::currentDateTimeUtc();
 
 	initializePgn();
 	m_gameInProgress = false;
@@ -981,7 +981,7 @@ void ChessGame::startGame()
 	m_pgn->setPlayerName(Chess::Side::Black, m_player[Chess::Side::Black]->name());
 
 	emit started(this);
-	QDateTime gameStartTime = QDateTime::currentDateTime();
+	QDateTime gameStartTime = QDateTime::currentDateTimeUtc();
 	m_pgn->setGameStartTime(gameStartTime);
 
 	for (int i = 0; i < 2; i++)
