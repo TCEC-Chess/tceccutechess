@@ -1100,12 +1100,6 @@ void EngineMatch::onGameFinished(ChessGame* game, int number)
 					// Detect out-of-range scores
 					if (absScore > 99999)
 						sScore = score < 0 ? "-999.99" : "999.99";
-					else if (absScore > 9900	// Detect mate-in-n scores
-						&& (absScore = 1000 - (absScore % 1000)) < 100)
-					{
-						sScore = score < 0 ? "-" : "";
-						sScore += "M" + QString::number(absScore);
-					}
 					else
 						sScore = QString::number(double(score) / 100.0, 'f', 2);
 
