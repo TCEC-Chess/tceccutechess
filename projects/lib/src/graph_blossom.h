@@ -308,10 +308,10 @@ private:
                         if (prevVertex != -1 && nextVertex != -1)
                         {
                             GRAPH_BLOSSOM_DEBUG_PRINTF("%s:%d %d-%d=%d %d-%d=%d %d-%d=%d %d-%d=%d\n", __FILE__, __LINE__,
-                                   prevVertex, blossomPath[0], graph.containsEdge(Edge { prevVertex, blossomPath[0] }),
-                                   prevVertex, blossomPath[k], graph.containsEdge(Edge { prevVertex, blossomPath[k] }),
-                                   blossomPath[0], nextVertex, graph.containsEdge(Edge { nextVertex, blossomPath[0] }),
-                                   blossomPath[k], nextVertex, graph.containsEdge(Edge { nextVertex, blossomPath[k] }));
+                                   prevVertex, blossomPath[0], graph.containsEdge(prevVertex, blossomPath[0]),
+                                   prevVertex, blossomPath[k], graph.containsEdge(prevVertex, blossomPath[k]),
+                                   blossomPath[0], nextVertex, graph.containsEdge(nextVertex, blossomPath[0]),
+                                   blossomPath[k], nextVertex, graph.containsEdge(nextVertex, blossomPath[k]));
 
                             // blossom within path
                             if ((i % 2) == 0)

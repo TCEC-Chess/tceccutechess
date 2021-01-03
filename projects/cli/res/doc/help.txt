@@ -92,6 +92,7 @@ Options:
 			'gauntlet': First engine plays against the rest
 			'knockout': Single-elimination tournament.
 			'pyramid': Every engine plays against all predecessors
+			'swiss-tcec': Swiss tournament, TCEC style pairings
   -event EVENT		Set the event/tournament name to EVENT
   -games N		Play N games per encounter. This value should be set to
 			an even number in tournaments with more than two players

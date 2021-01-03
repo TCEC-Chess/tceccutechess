@@ -198,7 +198,7 @@ bool Tournament::bergerSchedule() const
 
 bool Tournament::usesBergerSchedule() const
 {
-	return m_bergerSchedule && type() == "round-robin";
+	return m_bergerSchedule && (type() == "round-robin" || type() == "swiss-tcec");
 }
 
 int Tournament::strikes() const

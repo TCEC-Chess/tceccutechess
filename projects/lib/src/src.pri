@@ -34,6 +34,7 @@ HEADERS += $$PWD/chessengine.h \
     $$PWD/roundrobintournament.h \
     $$PWD/tournamentfactory.h \
     $$PWD/gauntlettournament.h \
+    $$PWD/swisstournament.h \
     $$PWD/epdrecord.h \
     $$PWD/openingsuite.h \
     $$PWD/econode.h \
@@ -77,6 +78,7 @@ SOURCES += $$PWD/chessengine.cpp \
     $$PWD/pgngamefilter.cpp \
     $$PWD/tournament.cpp \
     $$PWD/roundrobintournament.cpp \
+    $$PWD/swisstournament.cpp \
     $$PWD/tournamentfactory.cpp \
     $$PWD/gauntlettournament.cpp \
     $$PWD/epdrecord.cpp \
