@@ -285,6 +285,11 @@ class LIB_EXPORT Tournament : public QObject
 		void setResume(int nextGameNumber);
 
 		/*!
+		 * Add game result for a resumed tournament
+		 */
+		virtual void addResumeGameResult(int gameNumber, const QString &result);
+
+		/*!
 		 * Sets the tournament to Berger/Schurig scheduling if \a enabled.
 		 */
 		void setBergerSchedule(bool enabled);

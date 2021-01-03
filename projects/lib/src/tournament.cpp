@@ -365,6 +365,10 @@ void Tournament::setResume(int nextGameNumber)
 	m_resumeGameNumber = nextGameNumber;
 }
 
+void Tournament::addResumeGameResult(int gameNumber, const QString &result)
+{
+}
+
 void Tournament::addPlayer(PlayerBuilder* builder,
 			   const TimeControl& timeControl,
 			   const OpeningBook* book,

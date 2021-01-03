@@ -644,6 +644,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				for (p = pList.begin(); p != pList.end(); ++p) {
 					QVariantMap pMap = p->toMap();
 					addResumeScore(pMap["result"], pMap["white"], pMap["black"], &engineMap);
+					tournament->addResumeGameResult(nextGame++, pMap["result"].toString());
 					matchNum = matchNum + 1;
 					if (pMap["result"] == "*") {
 						pList.erase(p, pList.end());
