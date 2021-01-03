@@ -640,8 +640,6 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 
 				pList = tfMap["matchProgress"].toList();
 				QVariantList::iterator p;
-				double engineOne = 0;
-				double engineTwo = 0;
 				int matchNum = 1;
 				for (p = pList.begin(); p != pList.end(); ++p) {
 					QVariantMap pMap = p->toMap();
@@ -660,7 +658,7 @@ EngineMatch* parseMatch(const QStringList& args, CuteChessCoreApplication& app)
 				nextGame = pList.size();
 			   qWarning() << "ARUN: Skipping Game:" << nextGame;
 				if (nextGame > 0)
-					tournament->setResume(nextGame, engineOne, engineTwo);
+					tournament->setResume(nextGame);
 			}
 		}
 		if (eMap.contains("engines")) {

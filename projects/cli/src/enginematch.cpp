@@ -427,8 +427,8 @@ public:
 	int m_gamesPlayedAsBlack;
 	int m_winsAsWhite;
 	int m_winsAsBlack;
-	int m_lossAsBlack;
 	int m_lossAsWhite;
+	int m_lossAsBlack;
 	int m_crashes;
 	int m_strikes;
 	bool m_disqualified;

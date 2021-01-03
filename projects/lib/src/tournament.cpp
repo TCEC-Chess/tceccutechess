@@ -359,7 +359,7 @@ void Tournament::setReloadEngines(bool enabled)
 	m_reloadEngines = enabled;
 }
 
-void Tournament::setResume(int nextGameNumber, double eng1Score, double eng2Score)
+void Tournament::setResume(int nextGameNumber)
 {
 	Q_ASSERT(nextGameNumber >= 0);
 	m_resumeGameNumber = nextGameNumber;
@@ -1088,7 +1088,6 @@ void Tournament::start()
 
 	if (m_resumeGameNumber)
 	{
-		//m_finishedGameCount = m_resumeGameNumber - 1;
 		for(int nextGame = m_resumeGameNumber; nextGame; --nextGame)
 		{
 			TournamentPair* pair(nextPair(m_nextGameNumber));
