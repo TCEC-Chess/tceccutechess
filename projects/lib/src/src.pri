@@ -45,7 +45,8 @@ HEADERS += $$PWD/chessengine.h \
     $$PWD/pyramidtournament.h \
     $$PWD/tournamentplayer.h \
     $$PWD/tournamentpair.h \
-    $$PWD/worker.h
+    $$PWD/worker.h \
+    $$PWD/graph_blossom.h
 SOURCES += $$PWD/chessengine.cpp \
     $$PWD/chessgame.cpp \
     $$PWD/chessplayer.cpp \
