@@ -80,6 +80,9 @@ class LIB_EXPORT SwissTournament : public Tournament
                     }
                 };
 
+                // Encounters denote disallowed pairings. We use this structure
+                // also for temporarily disallowed pairings due to color
+                // balancing rules.
                 class EncountersTable
                 {
                 private:

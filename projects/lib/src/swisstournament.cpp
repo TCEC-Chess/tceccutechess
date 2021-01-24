@@ -19,8 +19,10 @@
 
 #include "swisstournament.h"
 #include <algorithm>
+#include <cstdlib>
 #include <QDebug>
 
+#include "gamemanager.h"
 #include "graph_blossom.h"
 
 SwissTournament::SwissTournament(GameManager* gameManager,
@@ -82,7 +84,7 @@ QList< QPair<QString, QString> > SwissTournament::getPairings()
         }
         else
         {
-            pList.append(qMakePair(QString(""), QString("")));
+            pList.append(qMakePair(QString("TBD"), QString("TBD")));
         }
     }
 
@@ -107,6 +109,18 @@ void SwissTournament::initializePairing()
     m_encounterHistory.clear();
     m_encounterHistory.resize(gamesPerCycle() * roundMultiplier());
     m_ignoreRoundsForEncounters = 0;
+
+    // sanity checks
+
+    // The TCEC tournament code swaps pairs incorrectly if we have odd number of encounters per game
+    if (bergerSchedule() && (gamesPerEncounter() % 2) == 1)
+        qFatal("Berger schedule does not work correctly with odd number of encounters per game");
+
+    // The nextPair() logic does not properly check whether all the round games
+    // are completed before pairing for next round. This would do pairing with
+    // incomplete results.
+    if (gameManager()->concurrency() != 1)
+        qFatal("TCEC Swiss does not currently support >1 concurrent games");
 }
 
 int SwissTournament::gamesPerCycle() const
@@ -190,6 +204,7 @@ void SwissTournament::rebuildEncountersSet(EncountersTable &encounters) const
 {
     encounters.clear();
 
+    // actual encounters from history
     for (int r0 = m_ignoreRoundsForEncounters; r0 < currentRound() - 1; ++r0)
     {
         // note: r0 is the zero-based round counter
@@ -199,6 +214,29 @@ void SwissTournament::rebuildEncountersSet(EncountersTable &encounters) const
             const QPair<int, int> pair = m_encounterHistory[r0 * gamesPerCycle() + g];
 
             encounters.addEncounter(pair.first, pair.second);
+        }
+    }
+
+    // temporarily disallowed pairings
+    for (int i = 0; i < playerCount(); ++i)
+    {
+        const int player1WGD { m_playerStats[i].whiteGameDiff };
+
+        for (int j = i + 1; j < playerCount(); ++j)
+        {
+            if (encounters.hasMet(i, j))
+                continue;
+
+            const int player2WGD { m_playerStats[j].whiteGameDiff };
+
+            if (std::abs(player1WGD + player2WGD) > 2)
+            {
+                qInfo()
+                    << "Temporarily disallowing pairing of" << i << "and" << j
+                    << "due to color balancing rules";
+
+                encounters.addEncounter(i, j);
+            }
         }
     }
 }
@@ -235,7 +273,7 @@ void SwissTournament::assignByeIfNecessary(QVector<PairingData> &pairingData)
     // everyone has a BYE, reset the BYEs
     if (allByes)
     {
-        qWarning() << "- Reset BYEs";
+        qInfo() << "- Reset BYEs";
         for (int i = 0; allByes && i < playerCount(); ++i)
             m_playerStats[i].byeReceived = false;
     }
@@ -256,7 +294,7 @@ void SwissTournament::assignByeIfNecessary(QVector<PairingData> &pairingData)
         for (int j = 0; j < gamesPerEncounter(); ++j)
             addScore(entry.playerIndex, 2); // BYE games are wins
 
-        qWarning() << "- Added BYE for player" << entry.playerIndex;
+        qInfo() << "- Added BYE for player" << entry.playerIndex;
         break;
     }
 }
@@ -281,7 +319,7 @@ bool SwissTournament::determineColorIsFirstWhite(int firstPlayer, const PlayerSt
     if (firstScore > secondScore)
         return false;
 
-    // even score, even white game diff. Use prefixed pattern
+    // even score, even white game diff. Use a fixed pattern
     switch ((currentRound() - 1) % 4)
     {
     case 0: return false;
@@ -399,7 +437,7 @@ void SwissTournament::generateRoundPairings()
     QVector<PairingData> pairingData;
     pairingData.resize(playerCount());
 
-    qWarning() << "Generate pairings for round" << currentRound();
+    qInfo() << "Generate pairings for round" << currentRound();
 
     // STEP 1: Generate pairing order
     generatePairingOrder(pairingData);
@@ -424,16 +462,18 @@ void SwissTournament::generateRoundPairings()
     EncountersTable encounters(playerCount());
     while (true)
     {
+        // encounters based on history and color balancing rules
         rebuildEncountersSet(encounters);
 
         // another helpful print
+        qInfo() << "Disallowed pairings: encounters and color rules";
         for (int i = 0; i < playerCount(); ++i)
         {
             QString met;
             for (int j = 0; j < playerCount(); ++j)
                 met += encounters.hasMet(i,j) ? "x" : " ";
 
-            qInfo() << "EncounterMatrix:" << met;
+            qInfo() << "DisallowedPairing:" << met << "for" << playerAt(i).builder()->name();
         }
 
         // pairable?
@@ -456,14 +496,13 @@ void SwissTournament::generateRoundPairings()
 
 TournamentPair* SwissTournament::nextPair(int gameNumber)
 {
-    qWarning() << "Requesting next pair: game number" << gameNumber;
+    qInfo() << "Requesting next pair: game number" << gameNumber;
 
     if (gameNumber >= finalGameCount())
         return nullptr;
 
     const int gameInRound = gameNumber % gamesPerRound();
 
-    // note: round 1 pairings are generated on initializePairing()
     if (gameInRound == 0)
     {
         setCurrentRound(1 + (gameNumber / gamesPerRound()));
@@ -485,7 +524,7 @@ TournamentPair* SwissTournament::nextPair(int gameNumber)
     {
         const QString &result = m_preRecordedResults[gameNumber];
 
-        qWarning() << "Using prerecorded result" << result << "for pairing";
+        qInfo() << "Using prerecorded result" << result << "for pairing";
 
         if (result == "1-0")
         {
