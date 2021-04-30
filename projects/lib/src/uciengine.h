@@ -90,6 +90,7 @@ class LIB_EXPORT UciEngine : public ChessEngine
 		// after it sends a "bestmove"
 		QStringList m_bmBuffer;
 		bool m_sendOpponentsName;
+		bool m_sendRatingAdv;
 		bool m_canPonder;
 		PonderState m_ponderState;
 		Chess::Move m_ponderMove;
