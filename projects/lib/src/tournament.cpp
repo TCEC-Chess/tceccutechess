@@ -361,6 +361,8 @@ void Tournament::setReloadEngines(bool enabled)
 
 void Tournament::setResume(int nextGameNumber)
 {
+    Q_UNUSED(eng1Score);
+    Q_UNUSED(eng2Score);
 	Q_ASSERT(nextGameNumber >= 0);
 	m_resumeGameNumber = nextGameNumber;
 }
@@ -453,6 +455,7 @@ bool Tournament::fileExists(QString path) const
 
 bool Tournament::resetBook(const TournamentPair* pair) const
 {
+    Q_UNUSED(pair);
 	return false;
 }
 
@@ -475,7 +478,10 @@ bool Tournament::shouldWeStopTour() const
 
 bool Tournament::shouldWeStop(int white, int black, const TournamentPair* pair) const
 {
-	return false;
+    Q_UNUSED(white);
+    Q_UNUSED(black);
+    Q_UNUSED(pair);
+    return false;
 }
 
 bool Tournament::areAllGamesFinished() const
@@ -490,6 +496,7 @@ bool Tournament::hasGauntletRatingsOrder() const
 
 void Tournament::setTC(TournamentPlayer white, TournamentPlayer black, ChessGame * game, const TournamentPair* pair)
 {
+    Q_UNUSED(pair);
 	game->setTimeControl(white.timeControl(), Chess::Side::White);
 	game->setTimeControl(black.timeControl(), Chess::Side::Black);
 }
@@ -509,8 +516,7 @@ void Tournament::startGame(TournamentPair* pair)
 	m_pair->addStartedGame();
 	const bool usesBerger = usesBergerSchedule();
 	if (m_swapSides && usesBerger
-			&& (m_nextGameNumber / gamesPerCycle()) % 2
-				== m_pair->hasOriginalOrder())
+            && (m_nextGameNumber / gamesPerCycle()) % 2	== (m_pair->hasOriginalOrder()? 1: 0))
 		m_pair->swapPlayers();
 
 	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
@@ -647,8 +653,7 @@ void Tournament::skipGame(TournamentPair* pair)
 	m_pair->addStartedGame();
 	const bool usesBerger = usesBergerSchedule();
 	if (m_swapSides && usesBerger
-			&& (m_nextGameNumber / gamesPerCycle()) % 2
-				== m_pair->hasOriginalOrder())
+            && (m_nextGameNumber / gamesPerCycle()) % 2	== (m_pair->hasOriginalOrder()? 1: 0))
 		m_pair->swapPlayers();
 
 	const TournamentPlayer& white = m_players[m_pair->firstPlayer()];
@@ -770,7 +775,7 @@ void Tournament::startNextGame()
 		}
 		TournamentPair* pair(nextPair(m_nextGameNumber));
 		needToStop = shouldWeStopTour();
-		qWarning () << "CAlling shouldWeStopTour" << needToStop;
+        qWarning () << "Calling shouldWeStopTour" << needToStop;
 		if (!pair || !pair->isValid())
 		{
 			qWarning () << "Start next game no pair found:" << needToStop;
@@ -780,7 +785,7 @@ void Tournament::startNextGame()
 		}
 
 		needtoResetBook = resetBook(pair);
-		qWarning () << "CAlling resetBook ,needtoResetBook:" << needtoResetBook;
+        qWarning () << "Calling resetBook ,needtoResetBook:" << needtoResetBook;
 		if (needtoResetBook || ((!pair->hasSamePlayers(m_pair) && m_players.size() > 2)))
 		{
 			m_startFen.clear();
@@ -857,8 +862,12 @@ bool Tournament::writePgn(PgnGame* pgn, int gameNumber)
 			qWarning("Omitted incomplete game %d", m_savedGameCount);
 			continue;
 		}
-		if (!tmp.write(m_pgnOut, m_pgnOutMode)
-		||  m_pgnFile.error() != QFile::NoError)
+
+        // make sure to write the complete PGN
+        tmp.resetCursor();
+
+        if (!tmp.write(m_pgnOut, m_pgnOutMode)
+            ||  m_pgnFile.error() != QFile::NoError)
 		{
 			ok = false;
 			qWarning("Could not write PGN game %d", m_savedGameCount);
@@ -930,7 +939,7 @@ void Tournament::onEngineUpdated(int engineIndex)
 {
 	const EngineConfiguration& config = m_engineManager->engineAt(engineIndex);
 
-	for (auto player : m_players)
+    for (auto &player : m_players)
 		if (player.name() == config.name())
 		{
 			EngineBuilder* builder =

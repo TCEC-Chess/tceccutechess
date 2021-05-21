@@ -29,9 +29,9 @@ EngineConfiguration::EngineConfiguration()
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
-	  m_restart_score(0),
 	  m_strikes(0),
-	  m_cuteseal(false)
+      m_restart_score(0),
+      m_cuteseal(false)
 {
 }
 
@@ -47,9 +47,9 @@ EngineConfiguration::EngineConfiguration(const QString& name,
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
-	  m_restart_score(0),
 	  m_strikes(0),
-	  m_cuteseal(false)
+      m_restart_score(0),
+      m_cuteseal(false)
 {
 }
 
@@ -60,9 +60,9 @@ EngineConfiguration::EngineConfiguration(const QVariant& variant)
 	  m_validateClaims(true),
 	  m_restartMode(RestartAuto),
 	  m_rating(0),
-	  m_restart_score(0),
 	  m_strikes(0),
-	  m_cuteseal(false)
+      m_restart_score(0),
+      m_cuteseal(false)
 {
 	const QVariantMap map = variant.toMap();
 
@@ -129,9 +129,9 @@ EngineConfiguration::EngineConfiguration(const EngineConfiguration& other)
 	  m_validateClaims(other.m_validateClaims),
 	  m_restartMode(other.m_restartMode),
 	  m_rating(other.m_rating),
-	  m_restart_score(other.m_restart_score),
 	  m_strikes(other.m_strikes),
-	  m_cuteseal(other.m_cuteseal)
+      m_restart_score(other.m_restart_score),
+      m_cuteseal(other.m_cuteseal)
 {
 	const auto options = other.options();
 	for (const EngineOption* option : options)
@@ -473,10 +473,10 @@ bool EngineConfiguration::operator!=(const EngineConfiguration& other) const
 
 static bool equivalent(const QStringList& l1, const QStringList& l2, Qt::CaseSensitivity cs = Qt::CaseSensitive)
 {
-	for (auto str : l1)
+    for (auto &str : l1)
 		if (!l2.contains(str, cs))
 			return false;
-	for (auto str : l2)
+    for (auto &str : l2)
 		if (!l1.contains(str, cs))
 			return false;
 	return true;

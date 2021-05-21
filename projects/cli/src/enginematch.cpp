@@ -376,6 +376,7 @@ public:
 		int m_gameNo;
 		WinnerType m_winner;
 		double m_result;
+		int m_color;
 	};
 
 	CrossTableData(QString engineName, int elo = 0, int crashes = 0, int strikes = 0) :
@@ -482,7 +483,7 @@ bool sortCrossTableDataByScore(const CrossTableData &s1, const CrossTableData &s
 						}
 					} else {
 					return s1.m_head2head[s2.m_engineName] > 0;
-					}	
+					}
 				} else {
 				return (s1.m_gamesPlayedAsWhite + s1.m_gamesPlayedAsBlack) < (s2.m_gamesPlayedAsWhite + s2.m_gamesPlayedAsBlack);
 				}
@@ -565,8 +566,10 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				blackDataString += "0";
 				slotData.m_winner = CrossTableData::WinnerWhite;
 				slotData.m_result = 1.0;
+				slotData.m_color = 0;
 				whiteCrossData.append(slotData);
 				slotData.m_result = 0.0;
+				slotData.m_color = 1;
 				blackCrossData.append(slotData);
 			} else if (result == "0-1") {
 				if (!disqualified) {
@@ -585,8 +588,10 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				blackDataString += "1";
 				slotData.m_winner = CrossTableData::WinnerBlack;
 				slotData.m_result = 1.0;
+				slotData.m_color = 1;
 				blackCrossData.append(slotData);
 				slotData.m_result = 0.0;
+				slotData.m_color = 0;
 				whiteCrossData.append(slotData);
 			} else if (result == "1/2-1/2") {
 				if (!disqualified) {
@@ -597,7 +602,9 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 				blackDataString += "=";
 				slotData.m_winner = CrossTableData::WinnerNone;
 				slotData.m_result = 0.5;
+				slotData.m_color = 0;
 				whiteCrossData.append(slotData);
+				slotData.m_color = 1;
 				blackCrossData.append(slotData);
 			}
 			if (whiteDataString.length() > roundLength) roundLength = whiteDataString.length();
@@ -792,6 +799,7 @@ void EngineMatch::generateCrossTable(QVariantMap& eMap)
 					QVariantMap slot;
 					slot["Game"] = slotData.m_gameNo;
 					slot["Result"] = slotData.m_result;
+					slot["Color"] = slotData.m_color;
 					result["H2h"] = result["H2h"].toDouble() + slotData.m_result;
 					switch (slotData.m_winner) {
 					case CrossTableData::WinnerNone:

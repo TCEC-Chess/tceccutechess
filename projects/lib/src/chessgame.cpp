@@ -188,7 +188,7 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 		str += ", wv=";
 		if (side == Chess::Side::Black && sScore != "0.00") {
 			if (sScore[0] == '-')
-				str += sScore.right(sScore.length() - 1);
+                str += sScore.rightRef(sScore.length() - 1);
 			else
 				str += "-" + sScore;
 		} else {
@@ -207,8 +207,8 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 	// resign rule clock 'Rr'
 	str += ", Rr=" + QString::number(m_adjudicator.resignClock(m_board, eval));
 
-	// material balance
-	str += statusString(move, false);
+	// material balance (not desired)
+//	str += statusString(move, false);
 
 	m_board->undoMove();
 
@@ -238,40 +238,47 @@ QString ChessGame::evalString(const MoveEvaluation& eval, const Chess::Move& mov
 
 QString ChessGame::statusString(const Chess::Move& move, bool doMove)
 {
-	if (doMove)
-		m_board->makeMove(move);
+    Q_UNUSED(move);
+    Q_UNUSED(doMove);
+#if 0
+    if (doMove)
+        m_board->makeMove(move);
 
-	// Material balance 'mb'
-	QMap<QString, int> pMap;
-	for (int file = 0; file < m_board->height(); file++)
-		for (int rank = 0; rank < m_board->width(); rank++)
-		{
-			const Chess::Square sq = Chess::Square(file, rank);
-			const Chess::Piece piece = m_board->pieceAt(sq);
-			if (!piece.isValid()) continue;
-			const QString sym(m_board->pieceSymbol(piece).toUpper());
-			if (!pMap.contains(sym))
-				pMap[sym] = 0;
-			if (piece.side() == Chess::Side::White)
-				++pMap[sym];
-			else
-				--pMap[sym];
-		}
+    // Material balance 'mb'
+    QMap<QString, int> pMap;
+    for (int file = 0; file < m_board->height(); file++)
+        for (int rank = 0; rank < m_board->width(); rank++)
+        {
+            const Chess::Square sq = Chess::Square(file, rank);
+            const Chess::Piece piece = m_board->pieceAt(sq);
+            if (!piece.isValid()) continue;
+            const QString sym(m_board->pieceSymbol(piece).toUpper());
+            if (!pMap.contains(sym))
+                pMap[sym] = 0;
+            if (piece.side() == Chess::Side::White)
+                ++pMap[sym];
+            else
+                --pMap[sym];
+        }
 
-	QString str(", mb=");
-	for(const char* istr : {"P", "N", "B", "R", "Q"})
-	{
-		const int v(pMap[istr]);
-		if (v >= 0)
-			str += '+';
-		str += QString::number(v);
-	}
+    // not needed anymore
+    QString str(", mb=");
+    for(const char* istr : {"P", "N", "B", "R", "Q"})
+    {
+        const int v(pMap[istr]);
+        if (v >= 0)
+            str += '+';
+        str += QString::number(v);
+    }
 
-	if (doMove)
-		m_board->undoMove();
+    if (doMove)
+        m_board->undoMove();
 
-	str += ',';
-	return str;
+    str += ',';
+    return str;
+#else
+    return ",";
+#endif
 }
 
 ChessGame::ChessGame(Chess::Board* board, PgnGame* pgn, QObject* parent)
@@ -391,7 +398,7 @@ void ChessGame::stop(bool emitMoveChanged)
 		finish();
 		return;
 	}
-	
+
 	QDateTime gameEndTime = QDateTime::currentDateTimeUtc();
 
 	initializePgn();
@@ -998,13 +1005,13 @@ void ChessGame::startGame()
 	{
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
-		
+
 		addPgnMove(move, "book" + statusString(move, true));
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);
 		m_board->makeMove(move);
-		
+
 		emitLastMove();
 
 		if (!m_board->result().isNone())
@@ -1026,7 +1033,7 @@ void ChessGame::startGame()
 			connect(m_player[i], SIGNAL(wokeUp()),
 				this, SLOT(resume()));
 	}
-	
+
 	startTurn();
 }
 
@@ -1034,181 +1041,181 @@ void ChessGame::updateLiveFiles() const
 {
 	if (m_livePgnOut.isEmpty()) return;
 
-	const PgnGame* const pgn = m_pgn;
-
 	if (m_pgnFormat)
 	{
 		const QString fileName(m_livePgnOut + ".pgn");
-		QFile::resize(fileName, 0);
-		pgn->write(fileName, m_livePgnOutMode);
+		// '2' here will force the file to be rewritten from 0 if a tag has changed,
+		// this is what we want for live.pgn
+        m_pgn->write(fileName, 2, m_livePgnOutMode);
 	}
 
-	if (m_jsonFormat)
-	{
-		Chess::Board* board = m_board->copy();
-		board->setFenString(board->startingFenString());
+	// certainly not desired
+//	if (m_jsonFormat)
+//	{
+//		Chess::Board* board = m_board->copy();
+//		board->setFenString(board->startingFenString());
 
-		QVariantMap pMap;
+//		QVariantMap pMap;
 
-		// Parse and assemble engine options
-		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
-		for (QString& engine : engines)
-		{
-			engine = engine.trimmed();
-			const int ePos = engine.indexOf(':');
-			if (ePos > 0)
-			{
-				QVariantList oList;
-				QStringList options = engine.mid(ePos + 1).trimmed().split(';', QString::SkipEmptyParts);
-				for (QString& option : options)
-				{
-					option = option.trimmed();
-					QVariantMap oMap;
-					const int oPos = option.indexOf('=');
-					if(oPos > 0)
-					{
-						oMap["Name"] = option.left(oPos).trimmed();
-						oMap["Value"] = option.mid(oPos + 1).trimmed();
-					} else
-						oMap["Name"] = option;
-					oList << oMap;
-				}
-				pMap[engine.left(ePos).trimmed()] = oList;
-			}
-		}
+//		// Parse and assemble engine options
+//		QStringList engines = pgn->initialComment().split(',', QString::SkipEmptyParts);
+//		for (QString& engine : engines)
+//		{
+//			engine = engine.trimmed();
+//			const int ePos = engine.indexOf(':');
+//			if (ePos > 0)
+//			{
+//				QVariantList oList;
+//				QStringList options = engine.mid(ePos + 1).trimmed().split(';', QString::SkipEmptyParts);
+//				for (QString& option : options)
+//				{
+//					option = option.trimmed();
+//					QVariantMap oMap;
+//					const int oPos = option.indexOf('=');
+//					if(oPos > 0)
+//					{
+//						oMap["Name"] = option.left(oPos).trimmed();
+//						oMap["Value"] = option.mid(oPos + 1).trimmed();
+//					} else
+//						oMap["Name"] = option;
+//					oList << oMap;
+//				}
+//				pMap[engine.left(ePos).trimmed()] = oList;
+//			}
+//		}
 
-		// Assemble tags
-		const QList< QPair<QString, QString> >& tags = pgn->tags();
-		QVariantMap hMap;
-		for(const QPair<QString, QString>& tagPair : tags)
-			hMap[tagPair.first] = tagPair.second;
-		pMap["Headers"] = hMap;
+//		// Assemble tags
+//		const QList< QPair<QString, QString> >& tags = pgn->tags();
+//		QVariantMap hMap;
+//		for(const QPair<QString, QString>& tagPair : tags)
+//			hMap[tagPair.first] = tagPair.second;
+//		pMap["Headers"] = hMap;
 
-		// Parse and assemble move stats
-		const QVector<PgnGame::MoveData>& moves = pgn->moves();
-		QVariantList mList;
-		for (const PgnGame::MoveData& move : moves)
-		{
-			QVariantMap mMap;
-			QVariantMap aMap;
+//		// Parse and assemble move stats
+//		const QVector<PgnGame::MoveData>& moves = pgn->moves();
+//		QVariantList mList;
+//		for (const PgnGame::MoveData& move : moves)
+//		{
+//			QVariantMap mMap;
+//			QVariantMap aMap;
 
-			mMap["m"] = move.moveString;
+//			mMap["m"] = move.moveString;
 
-			QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
-			sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
-			mMap["from"] = sq;
+//			QString sq(static_cast<char>(move.move.sourceSquare().file() + 'a'));
+//			sq += static_cast<char>(move.move.sourceSquare().rank() + '1');
+//			mMap["from"] = sq;
 
-			sq = static_cast<char>(move.move.targetSquare().file() + 'a');
-			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
-			mMap["to"] = sq;
+//			sq = static_cast<char>(move.move.targetSquare().file() + 'a');
+//			sq += static_cast<char>(move.move.targetSquare().rank() + '1');
+//			mMap["to"] = sq;
 
-			mMap["book"] = false;
+//			mMap["book"] = false;
 
-			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
-			for(QString& stat : stats)
-			{
-				stat = stat.trimmed();
-				if (stat == "book") {
-					mMap["book"] = true;
-				} else {
-					const int pos = stat.indexOf('=');
-					if (pos > 0)
-					{
-						const QString name(stat.left(pos).trimmed());
-						const QString value(stat.mid(pos + 1).trimmed());
-						if (name == "pv")
-						{
-							QVariantMap pvMap;
-							QVariantList pvList;
+//			QStringList stats = move.comment.split(',', QString::SkipEmptyParts);
+//			for(QString& stat : stats)
+//			{
+//				stat = stat.trimmed();
+//				if (stat == "book") {
+//					mMap["book"] = true;
+//				} else {
+//					const int pos = stat.indexOf('=');
+//					if (pos > 0)
+//					{
+//						const QString name(stat.left(pos).trimmed());
+//						const QString value(stat.mid(pos + 1).trimmed());
+//						if (name == "pv")
+//						{
+//							QVariantMap pvMap;
+//							QVariantList pvList;
 
-							pvMap["San"] = value;
+//							pvMap["San"] = value;
 
-							int pvmCnt = 0;
-							QStringList pvMoves = value.split(' ', QString::SkipEmptyParts);
-							for (const QString& pvMoveStr : pvMoves)
-							{
-								QVariantMap pvMove;
+//							int pvmCnt = 0;
+//							QStringList pvMoves = value.split(' ', QString::SkipEmptyParts);
+//							for (const QString& pvMoveStr : pvMoves)
+//							{
+//								QVariantMap pvMove;
 
-								const Chess::Move& pvbm(board->moveFromString(pvMoveStr));
-								if (pvbm.isNull())
-									break;
-								const Chess::GenericMove& gm(board->genericMove(pvbm));
+//								const Chess::Move& pvbm(board->moveFromString(pvMoveStr));
+//								if (pvbm.isNull())
+//									break;
+//								const Chess::GenericMove& gm(board->genericMove(pvbm));
 
-								board->makeMove(pvbm);
-								++pvmCnt;
+//								board->makeMove(pvbm);
+//								++pvmCnt;
 
-								pvMove["m"] = pvMoveStr;
-								pvMove["fen"] = board->fenString();
+//								pvMove["m"] = pvMoveStr;
+//								pvMove["fen"] = board->fenString();
 
-								sq = static_cast<char>(gm.sourceSquare().file() + 'a');
-								sq += static_cast<char>(gm.sourceSquare().rank() + '1');
-								pvMove["from"] = sq;
+//								sq = static_cast<char>(gm.sourceSquare().file() + 'a');
+//								sq += static_cast<char>(gm.sourceSquare().rank() + '1');
+//								pvMove["from"] = sq;
 
-								sq = static_cast<char>(gm.targetSquare().file() + 'a');
-								sq += static_cast<char>(gm.targetSquare().rank() + '1');
-								pvMove["to"] = sq;
+//								sq = static_cast<char>(gm.targetSquare().file() + 'a');
+//								sq += static_cast<char>(gm.targetSquare().rank() + '1');
+//								pvMove["to"] = sq;
 
-								pvList << pvMove;
-							}
-							for(; pvmCnt > 0; --pvmCnt)
-								board->undoMove();
+//								pvList << pvMove;
+//							}
+//							for(; pvmCnt > 0; --pvmCnt)
+//								board->undoMove();
 
-							pvMap["Moves"] = pvList;
-							mMap["pv"] = pvMap;
-						}
-						else if (name == "mb")
-						{
-							QVariantMap mbMap;
-							int idx = 0;
-							for (const char* mstr : {"p", "n", "b", "r", "q"})
-							{
-								mbMap[mstr] = value.mid(idx, 2).toInt();
-								idx += 2;
-							}
-							mMap["material"] = mbMap;
-						}
-						else if (name == "R50")
-							aMap["FiftyMoves"] = value.toInt();
-						else if (name == "Rd")
-							aMap["Draw"] = value.toInt();
-						else if (name == "Rr")
-							aMap["ResignOrWin"] = value.toInt();
-						else
-							mMap[name] = value;
-					}
-					else	// real comment
-						mMap["rem"] = stat;
-				}
-			}
-			if (!aMap.empty())
-				mMap["adjudication"] = aMap;
+//							pvMap["Moves"] = pvList;
+//							mMap["pv"] = pvMap;
+//						}
+//						else if (name == "mb")
+//						{
+//							QVariantMap mbMap;
+//							int idx = 0;
+//							for (const char* mstr : {"p", "n", "b", "r", "q"})
+//							{
+//								mbMap[mstr] = value.mid(idx, 2).toInt();
+//								idx += 2;
+//							}
+//							mMap["material"] = mbMap;
+//						}
+//						else if (name == "R50")
+//							aMap["FiftyMoves"] = value.toInt();
+//						else if (name == "Rd")
+//							aMap["Draw"] = value.toInt();
+//						else if (name == "Rr")
+//							aMap["ResignOrWin"] = value.toInt();
+//						else
+//							mMap[name] = value;
+//					}
+//					else	// real comment
+//						mMap["rem"] = stat;
+//				}
+//			}
+//			if (!aMap.empty())
+//				mMap["adjudication"] = aMap;
 
-			board->makeMove(board->moveFromGenericMove(move.move));
+//			board->makeMove(board->moveFromGenericMove(move.move));
 
-			mMap["fen"] = board->fenString();
+//			mMap["fen"] = board->fenString();
 
-			mList << mMap;
-		}
-		pMap["Moves"] = mList;
+//			mList << mMap;
+//		}
+//		pMap["Moves"] = mList;
 
-		delete board;
+//		delete board;
 
-		const QString tempName(m_livePgnOut + "_temp.json");
-		const QString finalName(m_livePgnOut + ".json");
-		if (QFile::exists(tempName))
-			QFile::remove(tempName);
-		QFile output(tempName);
-		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			qWarning("cannot open live JSON output file: %s", qUtf8Printable(tempName));
-		} else {
-			QTextStream out(&output);
-			JsonSerializer serializer(pMap);
-			serializer.serialize(out);
-			output.close();
-			if (QFile::exists(finalName))
-				QFile::remove(finalName);
-			if (!QFile::rename(tempName, finalName))
-				qWarning("cannot rename live JSON output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
-		}
-	}
+//		const QString tempName(m_livePgnOut + "_temp.json");
+//		const QString finalName(m_livePgnOut + ".json");
+//		if (QFile::exists(tempName))
+//			QFile::remove(tempName);
+//		QFile output(tempName);
+//		if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+//			qWarning("cannot open live JSON output file: %s", qUtf8Printable(tempName));
+//		} else {
+//			QTextStream out(&output);
+//			JsonSerializer serializer(pMap);
+//			serializer.serialize(out);
+//			output.close();
+//			if (QFile::exists(finalName))
+//				QFile::remove(finalName);
+//			if (!QFile::rename(tempName, finalName))
+//				qWarning("cannot rename live JSON output file: %s to %s", qUtf8Printable(tempName), qUtf8Printable(finalName));
+//		}
+//	}
 }

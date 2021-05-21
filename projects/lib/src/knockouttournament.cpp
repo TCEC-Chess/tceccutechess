@@ -198,8 +198,8 @@ void KnockoutTournament::setTC(TournamentPlayer white, TournamentPlayer black, C
 		return;
 	}
 
-	int firstScore  = pair->firstScore() + white.builder()->resumescore();
-	int secondScore = pair->secondScore() + black.builder()->resumescore();
+//	int firstScore  = pair->firstScore() + white.builder()->resumescore();
+//	int secondScore = pair->secondScore() + black.builder()->resumescore();
 
 	qWarning() << "ARUN: Holy:" << white.builder()->resumescore();
 
@@ -230,7 +230,7 @@ bool KnockoutTournament::shouldWeStop(int iWhite, int iBlack, const TournamentPa
 	int firstScore  = pair->firstScore() + Tournament::playerAt(iWhite).builder()->resumescore();
 	int secondScore = pair->secondScore() + Tournament::playerAt(iBlack).builder()->resumescore();
 	int leadScore = qMax(firstScore, secondScore);
-	int pointsInProgress = pair->gamesInProgress() * 2;
+//	int pointsInProgress = pair->gamesInProgress() * 2;
 
 	if (leadScore <= gamesPerEncounter())
 	{
@@ -262,6 +262,7 @@ bool KnockoutTournament::shouldWeStop(int iWhite, int iBlack, const TournamentPa
 
 bool KnockoutTournament::procceedNextGame() const
 {
+    return true;
 }
 
 bool KnockoutTournament::resetBook(const TournamentPair* pair) const
@@ -297,7 +298,7 @@ bool KnockoutTournament::needMoreGames(const TournamentPair* pair) const
 	int firstScore  = pair->firstScore() + Tournament::playerAt(iWhite).builder()->resumescore();
 	int secondScore = pair->secondScore() + Tournament::playerAt(iBlack).builder()->resumescore();
 	int leadScore = qMax(firstScore, secondScore);
-	int pointsInProgress = pair->gamesInProgress() * 2;
+//	int pointsInProgress = pair->gamesInProgress() * 2;
 	//leadScore += pointsInProgress;
 
 	if (shouldWeStop(iWhite, iBlack, pair))

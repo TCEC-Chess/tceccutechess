@@ -762,16 +762,17 @@ void MainWindow::onGameFinished(ChessGame* game)
 	}
 
 	// save game notation of non-tournament games to default PGN file
-	if (!tab.m_tournament
-	&&  !game->pgn()->isNull()
-	&&  	(  !game->pgn()->moves().isEmpty()   // ignore empty games
-		|| !game->pgn()->result().isNone())) // without adjudication
+    auto pgn = game->pgn();
+
+    if (!tab.m_tournament && !pgn->isNull()
+        && (!pgn->moves().isEmpty()   // ignore empty games
+            || !pgn->result().isNone())) // without adjudication
 	{
 		QString fileName = QSettings().value("games/default_pgn_output_file", QString())
 					      .toString();
 
-		if (!fileName.isEmpty())
-			game->pgn()->write(fileName);
+        if (!fileName.isEmpty())
+            pgn->write(fileName, 1);
 			//TODO: reaction on error
 	}
 }
@@ -1060,7 +1061,8 @@ bool MainWindow::saveAs()
 bool MainWindow::saveGame(const QString& fileName)
 {
 	lockCurrentGame();
-	bool ok = m_tabs.at(m_tabBar->currentIndex()).m_pgn->write(fileName);
+    auto pgn = m_tabs.at(m_tabBar->currentIndex()).m_pgn;
+    bool ok = pgn->write(fileName, 3);
 	unlockCurrentGame();
 
 	if (!ok)

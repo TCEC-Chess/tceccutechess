@@ -79,6 +79,7 @@ class LIB_EXPORT PgnGame
 		bool isNull() const;
 		/*! Deletes all tags and moves. */
 		void clear();
+        void resetCursor();
 
 		/*! Returns the tags that are used to describe the game. */
 		QList< QPair<QString, QString> > tags() const;
@@ -119,15 +120,18 @@ class LIB_EXPORT PgnGame
 		 *
 		 * Returns true if successful; otherwise returns false.
 		 */
-		bool write(QTextStream& out, PgnMode mode = Verbose) const;
+        bool write(QTextStream& out, PgnMode mode = Verbose);
 		/*!
 		 * Writes the game to a file.
 		 * If the file already exists, the game will be appended
 		 * to the end of the file.
+         *
+         * reset_flag & 1: reset the cursor
+         *            & 2: empties the file when resetting the cursor
 		 *
 		 * Returns true if successful; otherwise returns false.
 		 */
-		bool write(const QString& filename, PgnMode mode = Verbose) const;
+        bool write(const QString& filename, int reset_flag, PgnMode mode = Verbose);
 		
 		/*!
 		 * Returns true if the game's variant is "standard" and it's
@@ -227,12 +231,17 @@ class LIB_EXPORT PgnGame
 		QDateTime m_gameStartTime;
 		QTime m_gameDuration;
 		quint64 m_key;
+
+        // PGN optimization
+        int m_tag_changed = 1;
+        int m_last_move = 0;
+        QString m_last_result;
 };
 
 /*! Reads a PGN game from a PGN stream. */
 extern LIB_EXPORT PgnStream& operator>>(PgnStream& in, PgnGame& game);
 
 /*! Writes a PGN game in verbose mode to a text stream. */
-extern LIB_EXPORT QTextStream& operator<<(QTextStream& out, const PgnGame& game);
+extern LIB_EXPORT QTextStream& operator<<(QTextStream& out, PgnGame& game);
 
 #endif // PGNGAME_H

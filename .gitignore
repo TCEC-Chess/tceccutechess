@@ -66,6 +66,7 @@ qtc-gdbmacros/
 .DS_Store
 
 # files created by MSVC
+build-win64/
 *.exe.embed.manifest
 *.dll.embed.manifest
 *.exe_manifest.rc

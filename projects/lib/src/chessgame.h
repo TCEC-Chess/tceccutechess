@@ -128,7 +128,7 @@ class LIB_EXPORT ChessGame : public QObject
 		void updateLiveFiles() const;
 
 		QString evalString(const MoveEvaluation& eval, const Chess::Move& move);
-		QString statusString(const Chess::Move& move, bool doMove);
+        QString statusString(const Chess::Move& move, bool doMove);
 
 		Chess::Board* m_board;
 		ChessPlayer* m_player[2];

@@ -43,7 +43,7 @@ PgnStream& operator>>(PgnStream& in, PgnGame& game)
 	return in;
 }
 
-QTextStream& operator<<(QTextStream& out, const PgnGame& game)
+QTextStream& operator<<(QTextStream& out, PgnGame& game)
 {
 	game.write(out);
 	return out;
@@ -67,6 +67,17 @@ void PgnGame::clear()
 	m_startingSide = Chess::Side();
 	m_tags.clear();
 	m_moves.clear();
+
+    resetCursor();
+}
+
+/**
+ * This will make sure the next write is a full PGN write
+ */
+void PgnGame::resetCursor() {
+    m_tag_changed = 1;
+    m_last_move = 0;
+    m_last_result.clear();
 }
 
 QList< QPair<QString, QString> > PgnGame::tags() const
@@ -213,7 +224,7 @@ bool PgnGame::read(PgnStream& in, int maxMoves, bool addEco)
 	clear();
 	if (!in.nextGame())
 		return false;
-	
+
 	while (in.status() == PgnStream::Ok)
 	{
 		bool stop = false;
@@ -268,37 +279,54 @@ bool PgnGame::read(PgnStream& in, int maxMoves, bool addEco)
 	return true;
 }
 
-bool PgnGame::write(QTextStream& out, PgnMode mode) const
+bool PgnGame::write(QTextStream& out, PgnMode mode)
 {
-	if (m_tags.isEmpty())
-		return false;
-	
-	const QList< QPair<QString, QString> > tags = this->tags();
-	int maxTags = (mode == Verbose) ? tags.size() : 7;
-	for (int i = 0; i < maxTags; i++)
-		writeTag(out, tags.at(i).first, tags.at(i).second);
-	
-	if (mode == Minimal && m_tags.contains("FEN"))
-	{
-		writeTag(out, "FEN", m_tags["FEN"]);
-		writeTag(out, "SetUp", m_tags["SetUp"]);
-	}
+    if (m_tags.isEmpty())
+        return false;
 
-	if (mode == Minimal && m_tags.contains("Variant")
-	&&  variant() != "standard")
-	{
-		writeTag(out, "Variant", m_tags["Variant"]);
-	}
+    // 1) if tags have changed => full rewrite
+    if (m_tag_changed) {
+        const QList< QPair<QString, QString> > tags = this->tags();
+        int maxTags = (mode == Verbose) ? tags.size() : 7;
+        for (int i = 0; i < maxTags; i++)
+            writeTag(out, tags.at(i).first, tags.at(i).second);
 
-	QString str;
-	int lineLength = 0;
+        if (mode == Minimal && m_tags.contains("FEN"))
+        {
+            writeTag(out, "FEN", m_tags["FEN"]);
+            writeTag(out, "SetUp", m_tags["SetUp"]);
+        }
+
+        if (mode == Minimal && m_tags.contains("Variant")
+            &&  variant() != "standard")
+        {
+            writeTag(out, "Variant", m_tags["Variant"]);
+        }
+        m_tag_changed = 0;
+    }
+
+    // 2) skip saved moves
 	int movenum = 0;
 	int side = m_startingSide;
 
-	if (!m_initialComment.isEmpty())
+    if (!m_last_move && !m_initialComment.isEmpty())
 		out << "\n" << "{" << m_initialComment << "}";
 
-	for (int i = 0; i < m_moves.size(); i++)
+    // skip moves
+    for (auto i = 0; i < m_last_move; i ++) {
+        if (i == 0 && side == Chess::Side::Black)
+            movenum ++;
+        else if (side == Chess::Side::White)
+            movenum ++;
+
+        side = !side;
+    }
+
+    // 3) save from the last move, not from 0
+    QString str;
+    int lineLength = 0;
+
+    for (auto i = m_last_move; i < m_moves.size(); i++)
 	{
 		const MoveData& data = m_moves.at(i);
 
@@ -326,24 +354,44 @@ bool PgnGame::write(QTextStream& out, PgnMode mode) const
 
 		side = !side;
 	}
+    m_last_move = m_moves.size();
 
-	str = m_tags.value("Result");
+    // 4) remember the last result
+    m_last_result = m_tags.value("Result");
+    if (lineLength + m_last_result.size() >= 80)
+        out << "\n" << m_last_result << "\n\n";
+    else
+        out << " " << m_last_result << "\n\n";
 
-	if (lineLength + str.size() >= 80)
-		out << "\n" << str << "\n\n";
-	else
-		out << " " << str << "\n\n";
-
-	out.flush();
-
+    out.flush();
 	return (out.status() == QTextStream::Ok);
 }
 
-bool PgnGame::write(const QString& filename, PgnMode mode) const
+/**
+ * @param reset_flag
+ * 		&1: reset the cursor to 0 => causes a full PGN write
+ * 		&2: when cursor reset, empty the file (not wanted when appending files)
+ */
+bool PgnGame::write(const QString& filename, int reset_flag, PgnMode mode)
 {
 	QFile file(filename);
 	if (!file.open(QIODevice::WriteOnly | QIODevice::Append))
 		return false;
+
+    if (reset_flag & 1)
+        resetCursor();
+
+    if (m_tag_changed) {
+		// good for single PGN writes
+        if (reset_flag & 2)
+            file.resize(0);
+    }
+    // remove the "\n*\n\n" at the end of the file
+    else if (m_last_result == "*") {
+        auto size = file.size();
+        file.resize((size > 4)? size - 4: 0);
+        m_last_result.clear();
+    }
 
 	QTextStream out(&file);
 	return write(out, mode);
@@ -422,10 +470,24 @@ quint64 PgnGame::key() const
 
 void PgnGame::setTag(const QString& tag, const QString& value)
 {
-	if (value.isEmpty())
+    // PGN optimization: tag changed => full write
+    auto changed = 0;
+    auto prev = m_tags[tag];
+
+    if (value.isEmpty()) {
+        if (prev.size())
+            changed ++;
 		m_tags.remove(tag);
-	else
-		m_tags[tag] = value;
+    }
+    else {
+        if (value != prev)
+            changed ++;
+        m_tags[tag] = value;
+    }
+    if (!changed)
+        return;
+
+    resetCursor();
 
 	if (m_tagReceiver)
 		QMetaObject::invokeMethod(m_tagReceiver, "setTag",
